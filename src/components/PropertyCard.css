@@ -1,0 +1,85 @@
+/* Existing styles... inheriting base styles */
+.property-card {
+    background-color: var(--color-bg-surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    padding: var(--spacing-lg);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    position: relative;
+    min-height: 140px;
+    /* Ensure some height consistency */
+}
+
+.property-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.icon-wrapper {
+    padding: var(--spacing-sm);
+    background-color: var(--color-bg-base);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.icon-wrapper.clickable {
+    cursor: pointer;
+    color: var(--color-primary);
+}
+
+.icon-wrapper.clickable:hover {
+    background-color: var(--color-bg-surface-hover);
+    /* subtle indication of interactivity */
+    box-shadow: 0 0 0 1px var(--color-primary-light, #e0e7ff);
+}
+
+.header-info {
+    flex: 1;
+}
+
+.header-info h3 {
+    font-size: 1.25rem;
+    color: var(--color-text-main);
+    margin-bottom: 0;
+}
+
+/* Meta Data */
+.card-content {
+    margin-top: auto;
+    /* Push to bottom if header is short, though flex-direction is column */
+}
+
+.property-meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.meta-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.meta-item .label {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+}
+
+.meta-item .value {
+    font-weight: 600;
+    color: var(--color-text-main);
+    font-size: 1.1rem;
+}
