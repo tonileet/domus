@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const CollapsiblePanel = ({ title, isOpen, onClose, children }) => {
+export const CollapsiblePanel = ({ title, isOpen, children }) => {
     if (!isOpen) return null;
 
     return (

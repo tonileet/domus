@@ -43,7 +43,7 @@ const Properties = () => {
                 nebenkosten: ''
             });
             addToast('Property added successfully');
-        } catch (err) {
+        } catch {
             addToast('Failed to add property', 'error');
         }
     };

@@ -5,7 +5,7 @@ export const useDocuments = () => {
     const documents = useLiveQuery(() => documentService.getAll(), []) || [];
 
     // Placeholder for future document operations if needed
-    const addDocument = async (docData) => {
+    const addDocument = async () => {
         // Implementation for future
     };
 

@@ -2,14 +2,13 @@ import React, { useState } from 'react';
 import { Search, Folder, File } from 'lucide-react';
 import FileCard from '../components/FileCard';
 import { useData } from '../context/DataContext';
-import { PageHeader, CollapsiblePanel, useToast } from '../components/common';
+import { PageHeader, CollapsiblePanel } from '../components/common';
 import { useQuickAction } from '../hooks/useQuickAction';
 import './Documents.css';
 
 const Documents = () => {
     const { documents } = useData();
     const [isAddingDocument, setIsAddingDocument] = useQuickAction();
-    const { addToast } = useToast();
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
 

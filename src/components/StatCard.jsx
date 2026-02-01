@@ -1,11 +1,12 @@
 import React from 'react';
 import './StatCard.css';
 
-const StatCard = ({ title, value, icon: Icon, trend, color = 'primary', ...props }) => {
+const StatCard = ({ title, value, icon, trend, color = 'primary', ...props }) => {
+    const IconComponent = icon;
     return (
         <div className="stat-card" {...props}>
             <div className={`icon-container bg-${color}`}>
-                <Icon size={24} color={`var(--color-${color})`} />
+                <IconComponent size={24} color={`var(--color-${color})`} />
             </div>
             <div className="stat-content">
                 <p className="stat-title">{title}</p>

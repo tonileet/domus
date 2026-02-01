@@ -36,6 +36,11 @@ export const useTenants = (properties = []) => {
 
     const updateTenant = async (id, updatedFields) => {
         try {
+            // If propertyId is being updated, also update propertyName for consistency
+            if (updatedFields.propertyId !== undefined) {
+                const property = properties.find(p => p.id === updatedFields.propertyId);
+                updatedFields.propertyName = property?.name || 'Unknown Property';
+            }
             await tenantService.update(id, updatedFields);
         } catch (err) {
             console.error('Failed to update tenant:', err);

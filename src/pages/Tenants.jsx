@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Calendar, CheckCircle, AlertCircle, MinusCircle, Trash2, Plus } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { PageHeader, CollapsiblePanel, ConfirmModal, useToast } from '../components/common';
@@ -43,7 +43,7 @@ const Tenants = () => {
                 leaseEnd: ''
             });
             addToast('Tenant added successfully');
-        } catch (err) {
+        } catch {
             addToast('Failed to add tenant', 'error');
         }
     };
@@ -55,7 +55,7 @@ const Tenants = () => {
             await updateTenant(id, editFormData);
             setExpandedTenantId(null);
             addToast('Tenant updated successfully');
-        } catch (err) {
+        } catch {
             addToast('Failed to update tenant', 'error');
         }
     };
@@ -95,7 +95,7 @@ const Tenants = () => {
             setExpandedTenantId(null);
             setDeleteModal({ open: false, tenantId: null, tenantName: '' });
             addToast('Tenant deleted successfully');
-        } catch (err) {
+        } catch {
             addToast('Failed to delete tenant', 'error');
         }
     };
@@ -203,7 +203,7 @@ const Tenants = () => {
                                             <p className="tenant-subtitle">
                                                 {tenant.propertyId ? (
                                                     <Link to={`/properties/${tenant.propertyId}`} className="property-link" onClick={e => e.stopPropagation()}>
-                                                        {tenant.propertyName}
+                                                        {properties.find(p => p.id === tenant.propertyId)?.name || tenant.propertyName || 'Unknown Property'}
                                                     </Link>
                                                 ) : (
                                                     <span className="text-muted">No Property</span>

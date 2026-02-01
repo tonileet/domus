@@ -9,15 +9,16 @@ import { useLocation } from 'react-router-dom';
  */
 export const useQuickAction = () => {
     const location = useLocation();
-    const [shouldOpenAdd, setShouldOpenAdd] = useState(false);
+    const [shouldOpenAdd, setShouldOpenAdd] = useState(() => {
+        return location.state?.openAdd === true;
+    });
 
     useEffect(() => {
         if (location.state?.openAdd) {
-            setShouldOpenAdd(true);
             // Clear the state to prevent reopening on simple re-renders
             window.history.replaceState({}, document.title);
         }
-    }, [location]);
+    }, [location.state?.openAdd]);
 
     return [shouldOpenAdd, setShouldOpenAdd];
 };

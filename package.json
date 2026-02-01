@@ -7,7 +7,15 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:agents": "node agents/index.js",
+    "test:agents:parallel": "node agents/index.js --parallel",
+    "test:agents:lint": "node agents/index.js --no-unittest --no-e2e",
+    "test:agents:unit": "node agents/index.js --no-linter --no-e2e"
   },
   "dependencies": {
     "dexie": "^4.2.1",
@@ -19,13 +27,20 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.58.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.7.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/ui": "^4.0.18",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
-    "vite": "^5.4.21"
+    "jsdom": "^27.4.0",
+    "vite": "^5.4.21",
+    "vitest": "^4.0.18"
   }
 }

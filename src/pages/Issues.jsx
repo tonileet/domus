@@ -42,7 +42,7 @@ const Issues = () => {
                 setExpandedIssueId(null);
             }
             addToast('Issue resolved');
-        } catch (err) {
+        } catch {
             addToast('Failed to resolve issue', 'error');
         }
     };
@@ -57,7 +57,7 @@ const Issues = () => {
             setIsAddingIssue(false);
             setNewIssueData({ title: '', description: '', priority: 'Medium', propertyId: '' });
             addToast('Issue reported successfully');
-        } catch (err) {
+        } catch {
             addToast('Failed to report issue', 'error');
         }
     };
@@ -84,7 +84,7 @@ const Issues = () => {
             await updateIssue(expandedIssueId, editFormData);
             setExpandedIssueId(null);
             addToast('Issue updated successfully');
-        } catch (err) {
+        } catch {
             addToast('Failed to update issue', 'error');
         }
     };

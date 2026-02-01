@@ -51,7 +51,7 @@ const Costs = () => {
                 attachments: []
             });
             addToast('Cost added successfully');
-        } catch (err) {
+        } catch {
             addToast('Failed to add cost', 'error');
         }
     };
@@ -66,7 +66,7 @@ const Costs = () => {
             });
             setExpandedCostId(null);
             addToast('Cost updated successfully');
-        } catch (err) {
+        } catch {
             addToast('Failed to update cost', 'error');
         }
     };

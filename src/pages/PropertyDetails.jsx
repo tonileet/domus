@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, MapPin, Euro, Home, User, FileText, Settings, Save, X, Activity, Users, PawPrint, Plus, Trash2 } from 'lucide-react';
 import { useData } from '../context/DataContext';
@@ -22,7 +22,7 @@ const PropertyDetails = () => {
     const [isAddingIssue, setIsAddingIssue] = useState(false);
     const [newIssueData, setNewIssueData] = useState({ title: '', description: '', priority: 'Medium' });
 
-    useEffect(() => {
+    const handleEdit = () => {
         if (property) {
             setFormData({
                 name: property.name,
@@ -35,8 +35,9 @@ const PropertyDetails = () => {
                 pets: property.pets,
                 notes: property.notes
             });
+            setIsEditing(true);
         }
-    }, [property, isEditing]);
+    };
 
     const handleSave = () => {
         updateProperty(property.id, formData);
@@ -174,7 +175,7 @@ const PropertyDetails = () => {
                             </button>
                         </>
                     ) : (
-                        <button className="btn-outline" onClick={() => setIsEditing(true)}>
+                        <button className="btn-outline" onClick={handleEdit}>
                             <Settings size={18} />
                             <span>Edit Property</span>
                         </button>

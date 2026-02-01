@@ -37,7 +37,7 @@ const Contacts = () => {
                 contactInfo: ''
             });
             addToast('Contact added successfully');
-        } catch (err) {
+        } catch {
             addToast('Failed to add contact', 'error');
         }
     };
@@ -49,7 +49,7 @@ const Contacts = () => {
             await updateContact(id, editFormData);
             setExpandedContactId(null);
             addToast('Contact updated successfully');
-        } catch (err) {
+        } catch {
             addToast('Failed to update contact', 'error');
         }
     };
@@ -80,7 +80,7 @@ const Contacts = () => {
             setExpandedContactId(null);
             setDeleteModal({ open: false, contactId: null, contactName: '' });
             addToast('Contact deleted successfully');
-        } catch (err) {
+        } catch {
             addToast('Failed to delete contact', 'error');
         }
     };

@@ -1,0 +1,151 @@
+name: Nightly Test Agents
+
+on:
+  # Run every night at 2 AM UTC
+  schedule:
+    - cron: '0 2 * * *'
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      run_parallel:
+        description: 'Run agents in parallel'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  test-agents-full:
+    name: Full Test Agent Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+
+      - name: Run all test agents
+        run: |
+          if [ "${{ github.event.inputs.run_parallel }}" == "true" ]; then
+            npm run test:agents:parallel
+          else
+            npm run test:agents
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-test-results
+          path: test-results/
+          retention-days: 90
+
+      - name: Upload E2E test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-e2e-results
+          path: |
+            playwright-report/
+            e2e-tests/
+          retention-days: 30
+
+      - name: Read test report
+        if: always()
+        id: test_report
+        run: |
+          if [ -f "test-results/TEST_REPORT.md" ]; then
+            echo "report_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "report_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create issue on failure
+        if: failure() && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body = '## 🚨 Nightly Test Agents Failed\n\n';
+            body += `**Workflow Run:** [${context.runNumber}](${context.payload.repository.html_url}/actions/runs/${context.runId})\n`;
+            body += `**Commit:** ${context.sha.substring(0, 7)}\n\n`;
+
+            const reportPath = 'test-results/TEST_REPORT.md';
+            if (fs.existsSync(reportPath)) {
+              const report = fs.readFileSync(reportPath, 'utf8');
+              body += '### Test Report\n\n' + report;
+            }
+
+            const actionPlanPath = 'test-results/ACTION_PLAN.md';
+            if (fs.existsSync(actionPlanPath)) {
+              const actionPlan = fs.readFileSync(actionPlanPath, 'utf8');
+              body += '\n\n### Action Plan\n\n' + actionPlan;
+            }
+
+            // Create or update issue
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'nightly-test-failure'
+            });
+
+            if (issues.data.length > 0) {
+              // Update existing issue
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues.data[0].number,
+                body: body
+              });
+            } else {
+              // Create new issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '🚨 Nightly Test Agents Failed',
+                body: body,
+                labels: ['nightly-test-failure', 'bug']
+              });
+            }
+
+      - name: Close issue on success
+        if: success() && github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'nightly-test-failure'
+            });
+
+            for (const issue of issues.data) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed'
+              });
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: '✅ Nightly tests are now passing. Issue resolved.'
+              });
+            }

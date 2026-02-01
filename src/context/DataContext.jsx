@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { seedDatabase } from '../db/migration';
 import { useProperties, useTenants, useIssues, useCosts, useContacts, useDocuments } from '../hooks/domain';
-import { ToastProvider, useToast } from '../components/common';
+import { ToastProvider } from '../components/common';
 
 const DataContext = createContext();
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useData = () => {
     return useContext(DataContext);
 };

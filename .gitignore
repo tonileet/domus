@@ -22,3 +22,21 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local data and secrets
+data/
+*.local
+.env
+.env.*
+!.env.example
+
+# Test results and generated tests
+test-results/
+e2e-tests/
+playwright-report/
+test-results.json
+coverage/
+.nyc_output/
+
+# Agent configuration
+agents/config.js
