@@ -10,11 +10,6 @@ describe('idGenerator', () => {
     });
   });
 
-  it('should be defined', () => {
-    expect(generateId).toBeDefined();
-    expect(typeof generateId).toBe('function');
-  });
-
   describe('generateId', () => {
     it('should generate an ID with a prefix', () => {
       const result = generateId('t');

@@ -6,11 +6,6 @@ describe('api', () => {
     vi.stubGlobal('fetch', vi.fn());
   });
 
-  it('should be defined', () => {
-    expect(api).toBeDefined();
-    expect(typeof api).toBe('object');
-  });
-
   describe('GET', () => {
     it('should handle successful GET request', async () => {
       const mockData = { id: 1, name: 'Test' };
