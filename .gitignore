@@ -32,7 +32,6 @@ data/
 
 # Test results and generated tests
 test-results/
-e2e-tests/
 playwright-report/
 test-results.json
 coverage/

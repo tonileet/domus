@@ -220,8 +220,8 @@ class Linter {
     const files = await this.getAllFiles(srcPath, ['.js', '.jsx', '.json', '.env']);
 
     const secretPatterns = [
-      { name: 'API Key', regex: /(?:api|secret|access|jwt)[_.-]?(?:key|token)?\s*[:=]\s*['"`]([a-zA-Z0-9_\-]{20,})['"`]/i },
-      { name: 'Bearer Token', regex: /Bearer\s+([a-zA-Z0-9\-\._]{20,})/i },
+      { name: 'API Key', regex: /(?:api|secret|access|jwt)[_.-]?(?:key|token)?\s*[:=]\s*['"`]([a-zA-Z0-9_-]{20,})['"`]/i },
+      { name: 'Bearer Token', regex: /Bearer\s+([a-zA-Z0-9._-]{20,})/i },
       { name: 'Private Key', regex: /BEGIN\s+PRIVATE\s+KEY/ },
       { name: 'Password', regex: /password\s*[:=]\s*['"`]([^'"`]{6,})['"`]/i },
       { name: 'AWS Key', regex: /AKIA[0-9A-Z]{16}/ }

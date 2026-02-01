@@ -199,7 +199,7 @@ class TestManager {
   /**
    * Run agent with timeout protection
    */
-  async runAgentWithTimeout(agentPath, agentType) {
+  async runAgentWithTimeout(agentPath, _agentType) {
     const agentModule = await import(agentPath);
     const Agent = agentModule.default;
     const agent = new Agent({
