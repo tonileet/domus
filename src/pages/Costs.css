@@ -4,6 +4,19 @@
     margin: 0 auto;
 }
 
+/* Header Actions */
+.header-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+}
+
+.header-actions .btn-outline {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
 /* Flex Layout for Costs List */
 .cost-list {
     display: flex;

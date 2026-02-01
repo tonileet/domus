@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
-import { Calendar, CheckCircle, AlertCircle, XCircle, Euro, Users, Paperclip, X } from 'lucide-react';
+import { Calendar, CheckCircle, AlertCircle, XCircle, Euro, Paperclip, X, Camera } from 'lucide-react';
 import { PageHeader, CollapsiblePanel, useToast } from '../components/common';
 import { useQuickAction } from '../hooks/useQuickAction';
+import ReceiptScanner from '../components/ReceiptScanner';
 import './Costs.css';
 
 const Costs = () => {
@@ -27,6 +28,23 @@ const Costs = () => {
         issueIds: [],
         attachments: []
     });
+
+    // Receipt Scanner State
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
+
+    // Handle scanned receipt data
+    const handleScanComplete = (scannedData) => {
+        setNewCostData(prev => ({
+            ...prev,
+            name: scannedData.name || prev.name,
+            description: scannedData.description || prev.description,
+            amount: scannedData.amount || prev.amount,
+            dueDate: scannedData.dueDate || prev.dueDate
+        }));
+        setIsScannerOpen(false);
+        setIsAddingCost(true);
+        addToast('Receipt scanned! Please review the extracted data.');
+    };
 
     // Handle "Add Cost" (Top Panel)
     const handleAddSubmit = async (e) => {
@@ -179,7 +197,27 @@ const Costs = () => {
 
     return (
         <div className="costs-container">
-            <PageHeader title="Costs" onAction={() => setIsAddingCost(true)} />
+            <header className="page-header">
+                <div>
+                    <h1 className="page-title">Costs</h1>
+                </div>
+                <div className="header-actions">
+                    <button className="btn-outline" onClick={() => setIsScannerOpen(true)}>
+                        <Camera size={20} />
+                        <span>Scan Receipt</span>
+                    </button>
+                    <button className="btn-primary" onClick={() => setIsAddingCost(true)}>
+                        <span>+ Add Cost</span>
+                    </button>
+                </div>
+            </header>
+
+            {isScannerOpen && (
+                <ReceiptScanner
+                    onScanComplete={handleScanComplete}
+                    onClose={() => setIsScannerOpen(false)}
+                />
+            )}
 
             <CollapsiblePanel title="New Cost" isOpen={isAddingCost} onClose={() => setIsAddingCost(false)}>
                 <form onSubmit={handleAddSubmit}>
