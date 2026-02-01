@@ -1,12 +1,33 @@
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useState, useEffect, useCallback } from 'react';
 import { propertyService } from '../../db/services';
 
 export const useProperties = () => {
-    const properties = useLiveQuery(() => propertyService.getAll(), []) || [];
+    const [properties, setProperties] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const fetchProperties = useCallback(async () => {
+        try {
+            const data = await propertyService.getAll();
+            setProperties(data);
+            setError(null);
+        } catch (err) {
+            console.error('Failed to fetch properties:', err);
+            setError(err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchProperties();
+    }, [fetchProperties]);
 
     const updateProperty = async (id, updatedFields) => {
         try {
-            await propertyService.update(id, updatedFields);
+            const updated = await propertyService.update(id, updatedFields);
+            setProperties(prev => prev.map(p => p.id === id ? updated : p));
+            return updated;
         } catch (err) {
             console.error('Failed to update property:', err);
             throw err;
@@ -15,7 +36,9 @@ export const useProperties = () => {
 
     const addProperty = async (property) => {
         try {
-            await propertyService.create(property);
+            const created = await propertyService.create(property);
+            setProperties(prev => [...prev, created]);
+            return created;
         } catch (err) {
             console.error('Failed to add property:', err);
             throw err;
@@ -24,7 +47,11 @@ export const useProperties = () => {
 
     return {
         properties,
+        loading,
+        error,
         addProperty,
-        updateProperty
+        updateProperty,
+        refreshProperties: fetchProperties
     };
 };
+

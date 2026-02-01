@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { seedDatabase } from '../db/migration';
+import React, { createContext, useContext } from 'react';
 import { useProperties, useTenants, useIssues, useCosts, useContacts, useDocuments } from '../hooks/domain';
 import { ToastProvider } from '../components/common';
 
@@ -11,40 +10,45 @@ export const useData = () => {
 };
 
 export const DataProvider = ({ children }) => {
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [migrationComplete, setMigrationComplete] = useState(false);
-
-    // Initialize database and run migration on first load
-    useEffect(() => {
-        const initializeDatabase = async () => {
-            try {
-                setLoading(true);
-                const result = await seedDatabase();
-                setMigrationComplete(true);
-
-                if (!result.success) {
-                    setError(result.error);
-                }
-            } catch (err) {
-                console.error('Failed to initialize database:', err);
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        initializeDatabase();
-    }, []);
-
     // Domain Hooks
-    const { properties, addProperty, updateProperty } = useProperties();
+    const {
+        properties, loading: propertiesLoading, error: propertiesError,
+        addProperty, updateProperty, refreshProperties
+    } = useProperties();
+
     // Tenants need access to properties for "Unknown Property" fallback and occupant counting
-    const { tenants, addTenant, updateTenant, removeTenant, deleteTenant } = useTenants(properties);
-    const { issues, addIssue, updateIssue, resolveIssue } = useIssues();
-    const { costs, addCost, updateCost } = useCosts();
-    const { contacts, addContact, updateContact, deleteContact } = useContacts();
-    const { documents } = useDocuments();
+    // Note: If properties are not loaded yet, tenants hook might get empty array initially, which is fine.
+    const {
+        tenants, loading: tenantsLoading, error: tenantsError,
+        addTenant, updateTenant, removeTenant, deleteTenant, refreshTenants
+    } = useTenants(properties);
+
+    const {
+        issues, loading: issuesLoading, error: issuesError,
+        addIssue, updateIssue, resolveIssue, refreshIssues
+    } = useIssues();
+
+    const {
+        costs, loading: costsLoading, error: costsError,
+        addCost, updateCost, refreshCosts
+    } = useCosts();
+
+    const {
+        contacts, loading: contactsLoading, error: contactsError,
+        addContact, updateContact, deleteContact, refreshContacts
+    } = useContacts();
+
+    const {
+        documents, loading: documentsLoading, error: documentsError,
+        addDocument, refreshDocuments
+    } = useDocuments();
+
+    // Aggregate loading and error states
+    // We consider it loading if ANY critical resource is loading.
+    const loading = propertiesLoading || tenantsLoading || issuesLoading || costsLoading || contactsLoading || documentsLoading;
+
+    // Aggregate errors
+    const error = propertiesError || tenantsError || issuesError || costsError || contactsError || documentsError;
 
     const value = {
         // Data
@@ -57,7 +61,7 @@ export const DataProvider = ({ children }) => {
 
         // UI State
         loading,
-        error,
+        error: error ? error.message : null,
 
         // Methods
         addProperty,
@@ -73,16 +77,36 @@ export const DataProvider = ({ children }) => {
         updateCost,
         addContact,
         updateContact,
-        deleteContact
+        deleteContact,
+        addDocument,
+
+        // Refresh Methods (exposed if needed for manual refreshes)
+        refreshAll: () => {
+            refreshProperties();
+            refreshTenants();
+            refreshIssues();
+            refreshCosts();
+            refreshContacts();
+            refreshDocuments();
+        }
     };
 
-    // Show loading state during initial migration
-    if (loading && !migrationComplete) {
+    if (loading) {
         return (
-            <DataContext.Provider value={{ ...value, loading: true }}>
-                {children}
-            </DataContext.Provider>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <p>Loading application data...</p>
+            </div>
         );
+    }
+
+    if (error) {
+        return (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
+                <h3>Error loading data</h3>
+                <p>{error.message || String(error)}</p>
+                <p>Please ensure the API server is running (cd server && npm start)</p>
+            </div>
+        )
     }
 
     return (

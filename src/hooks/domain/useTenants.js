@@ -1,10 +1,29 @@
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useState, useEffect, useCallback } from 'react';
 import { tenantService, propertyService } from '../../db/services';
 import { TENANT_STATUS } from '../../constants/status';
 import { generateId } from '../../utils/idGenerator';
 
 export const useTenants = (properties = []) => {
-    const tenants = useLiveQuery(() => tenantService.getAll(), []) || [];
+    const [tenants, setTenants] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const fetchTenants = useCallback(async () => {
+        try {
+            const data = await tenantService.getAll();
+            setTenants(data);
+            setError(null);
+        } catch (err) {
+            console.error('Failed to fetch tenants:', err);
+            setError(err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchTenants();
+    }, [fetchTenants]);
 
     const addTenant = async (propertyId, tenantData) => {
         try {
@@ -20,7 +39,8 @@ export const useTenants = (properties = []) => {
                 ...tenantData
             };
 
-            await tenantService.create(newTenant);
+            const created = await tenantService.create(newTenant);
+            setTenants(prev => [...prev, created]);
 
             // Update property occupant count
             if (property) {
@@ -28,6 +48,7 @@ export const useTenants = (properties = []) => {
                     occupants: (property.occupants || 0) + 1
                 });
             }
+            return created;
         } catch (err) {
             console.error('Failed to add tenant:', err);
             throw err;
@@ -41,7 +62,9 @@ export const useTenants = (properties = []) => {
                 const property = properties.find(p => p.id === updatedFields.propertyId);
                 updatedFields.propertyName = property?.name || 'Unknown Property';
             }
-            await tenantService.update(id, updatedFields);
+            const updated = await tenantService.update(id, updatedFields);
+            setTenants(prev => prev.map(t => t.id === id ? updated : t));
+            return updated;
         } catch (err) {
             console.error('Failed to update tenant:', err);
             throw err;
@@ -53,11 +76,12 @@ export const useTenants = (properties = []) => {
             const tenant = tenants.find(t => t.id === tenantId);
 
             // Mark tenant as past instead of deleting
-            await tenantService.update(tenantId, {
+            const updated = await tenantService.update(tenantId, {
                 propertyId: null,
                 propertyName: null,
                 status: TENANT_STATUS.PAST
             });
+            setTenants(prev => prev.map(t => t.id === tenantId ? updated : t));
 
             // Update property occupant count
             if (tenant && tenant.propertyId) {
@@ -90,6 +114,7 @@ export const useTenants = (properties = []) => {
 
             // Permanently delete tenant from database
             await tenantService.delete(tenantId);
+            setTenants(prev => prev.filter(t => t.id !== tenantId));
         } catch (err) {
             console.error('Failed to delete tenant:', err);
             throw err;
@@ -98,9 +123,13 @@ export const useTenants = (properties = []) => {
 
     return {
         tenants,
+        loading,
+        error,
         addTenant,
         updateTenant,
         removeTenant,
-        deleteTenant
+        deleteTenant,
+        refreshTenants: fetchTenants
     };
 };
+

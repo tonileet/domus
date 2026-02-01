@@ -1,24 +1,45 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateId } from '../utils/idGenerator';
 
 describe('idGenerator', () => {
-  describe('generateId', () => {
-    it('should be defined', () => {
-      expect(generateId).toBeDefined();
-      expect(typeof generateId).toBe('function');
-    });
+  const mockUuid = '12345678-1234-1234-1234-123456789012';
 
-    it('should handle valid input', () => {
-      // TODO: Add test cases with valid input
-      // const result = generateId(validInput);
-      // expect(result).toBe(expectedOutput);
-    });
-
-    it('should handle edge cases', () => {
-      // TODO: Add edge case tests
-      // expect(generateId(null)).toBeDefined();
-      // expect(generateId(undefined)).toBeDefined();
+  beforeEach(() => {
+    vi.stubGlobal('crypto', {
+      randomUUID: () => mockUuid
     });
   });
 
+  it('should be defined', () => {
+    expect(generateId).toBeDefined();
+    expect(typeof generateId).toBe('function');
+  });
+
+  describe('generateId', () => {
+    it('should generate an ID with a prefix', () => {
+      const result = generateId('t');
+      expect(result).toBe(`t${mockUuid}`);
+    });
+
+    it('should generate an ID without a prefix if not provided', () => {
+      const result = generateId();
+      expect(result).toBe(mockUuid);
+    });
+
+    it('should generate an ID with an empty prefix', () => {
+      const result = generateId('');
+      expect(result).toBe(mockUuid);
+    });
+
+    it('should generate different IDs if crypto.randomUUID returns different values (sanity check)', () => {
+      let count = 0;
+      const uuids = ['uuid1', 'uuid2'];
+      vi.stubGlobal('crypto', {
+        randomUUID: () => uuids[count++]
+      });
+
+      expect(generateId()).toBe('uuid1');
+      expect(generateId()).toBe('uuid2');
+    });
+  });
 });

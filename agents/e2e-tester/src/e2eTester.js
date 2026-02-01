@@ -130,7 +130,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  reporter: [['html', { outputFolder: 'test-results/playwright-report' }]],
+  outputDir: 'test-results/playwright-results',
   use: {
     baseURL: '${this.config.baseURL}',
     trace: 'on-first-retry',
@@ -310,7 +311,8 @@ test.describe('Forms', () => {
     return new Promise((resolve, reject) => {
       const playwright = spawn('npx', ['playwright', 'test'], {
         cwd: this.config.projectRoot,
-        stdio: 'inherit'
+        stdio: 'inherit',
+        env: { ...process.env, CI: 'true' }
       });
 
       playwright.on('close', (code) => {

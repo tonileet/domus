@@ -1,45 +1,29 @@
-import db from '../database';
+import { api } from '../../utils/api';
 
 export const documentService = {
     // Get all documents
     async getAll() {
-        return await db.documents.toArray();
+        return await api.get('/documents');
     },
 
     // Get document by ID
     async getById(id) {
-        return await db.documents.get(id);
+        return await api.get(`/documents/${id}`);
     },
 
     // Create new document
     async create(document) {
-        return await db.documents.add(document);
+        return await api.post('/documents', document);
     },
 
     // Update document
     async update(id, updates) {
-        return await db.documents.update(id, updates);
+        return await api.put(`/documents/${id}`, updates);
     },
 
     // Delete document
     async delete(id) {
-        return await db.documents.delete(id);
-    },
-
-    // Get documents by category
-    async getByCategory(category) {
-        return await db.documents.where('category').equals(category).toArray();
-    },
-
-    // Get documents by type
-    async getByType(type) {
-        return await db.documents.where('type').equals(type).toArray();
-    },
-
-    // Search documents by name
-    async searchByName(searchTerm) {
-        return await db.documents
-            .filter(doc => doc.name.toLowerCase().includes(searchTerm.toLowerCase()))
-            .toArray();
+        return await api.delete(`/documents/${id}`);
     }
 };
+

@@ -1,29 +1,24 @@
-import db from '../database';
+import { api } from '../../utils/api';
 
 export const contactService = {
     async getAll() {
-        return await db.contacts.toArray();
+        return await api.get('/contacts');
     },
 
     async getById(id) {
-        return await db.contacts.get(id);
+        return await api.get(`/contacts/${id}`);
     },
 
     async create(contact) {
-        return await db.contacts.add(contact);
+        return await api.post('/contacts', contact);
     },
 
     async update(id, updates) {
-        return await db.contacts.update(id, updates);
+        return await api.put(`/contacts/${id}`, updates);
     },
 
     async delete(id) {
-        return await db.contacts.delete(id);
-    },
-
-    async searchByName(nameQuery) {
-        return await db.contacts
-            .filter(contact => contact.name.toLowerCase().includes(nameQuery.toLowerCase()))
-            .toArray();
+        return await api.delete(`/contacts/${id}`);
     }
 };
+

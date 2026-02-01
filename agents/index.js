@@ -19,7 +19,10 @@ async function main() {
     projectRoot: config.projectRoot,
     outputDir: config.outputDir,
     agents: config.agents,
-    parallel: config.parallel
+    parallel: config.parallel,
+    failFast: config.failFast,
+    timeout: config.timeout,
+    retries: config.retries
   });
 
   try {
@@ -29,8 +32,8 @@ async function main() {
     console.log(JSON.stringify(manager.getSummary(), null, 2));
 
     const success = results.linter?.success !== false &&
-                   results.unittest?.success !== false &&
-                   results.e2e?.success !== false;
+      results.unittest?.success !== false &&
+      results.e2e?.success !== false;
 
     process.exit(success ? 0 : 1);
   } catch (error) {
@@ -49,9 +52,13 @@ function parseArgs(args) {
     agents: {
       linter: true,
       unittest: true,
-      e2e: true
+      e2e: true,
+      apitest: true
     },
-    parallel: false
+    parallel: false,
+    failFast: false,
+    timeout: 300000, // 5 minutes
+    retries: 0
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -67,8 +74,20 @@ function parseArgs(args) {
       case '--no-e2e':
         config.agents.e2e = false;
         break;
+      case '--no-apitest':
+        config.agents.apitest = false;
+        break;
       case '--parallel':
         config.parallel = true;
+        break;
+      case '--fail-fast':
+        config.failFast = true;
+        break;
+      case '--timeout':
+        config.timeout = parseInt(args[++i], 10);
+        break;
+      case '--retries':
+        config.retries = parseInt(args[++i], 10);
         break;
       case '--output':
         config.outputDir = args[++i];
@@ -97,12 +116,18 @@ Options:
   --no-linter       Skip linter agent
   --no-unittest     Skip unit test agent
   --no-e2e          Skip E2E test agent
+  --no-apitest      Skip API test agent
   --parallel        Run agents in parallel
+  --fail-fast       Stop on first agent failure
+  --timeout <ms>    Agent timeout in milliseconds (default: 300000)
+  --retries <n>     Number of retries for failed agents (default: 0)
   --output <dir>    Output directory for results
   -h, --help        Show this help message
 
 Examples:
   node agents/index.js                    # Run all agents
+  node agents/index.js --fail-fast        # Stop on first failure
+  node agents/index.js --retries 2        # Retry failed agents twice
   node agents/index.js --no-e2e           # Skip E2E tests
   node agents/index.js --parallel         # Run agents in parallel
   node agents/index.js --output ./results # Custom output directory

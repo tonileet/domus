@@ -38,7 +38,7 @@ class Linter {
     try {
       await this.runESLint();
       await this.checkCodeSmells();
-      await this.checkBestPractices();
+      await this.checkSecrets(); // Security check
       await this.saveResults();
 
       console.log('✅ Linter: Analysis completed');
@@ -189,86 +189,68 @@ class Linter {
 
     // Check for deeply nested code
     for (let i = 0; i < lines.length; i++) {
-      const indentation = lines[i].match(/^(\s*)/)[1].length;
-      if (indentation > 24) { // More than 6 levels (assuming 4 spaces)
-        this.lintResults.suggestions.push({
-          type: 'suggestion',
-          message: 'Deeply nested code detected. Consider refactoring.',
-          file: relativePath,
-          line: i + 1,
-          severity: 'info'
-        });
-        this.lintResults.stats.info++;
-        break; // Only report once per file
+      // Skip empty lines or comments
+      if (!lines[i].trim() || lines[i].trim().startsWith('//')) continue;
+
+      const match = lines[i].match(/^(\s*)/);
+      if (match) {
+        const indentation = match[1].length;
+        if (indentation > 24) { // More than 6 levels (assuming 4 spaces)
+          this.lintResults.suggestions.push({
+            type: 'suggestion',
+            message: 'Deeply nested code detected. Consider refactoring.',
+            file: relativePath,
+            line: i + 1,
+            severity: 'info'
+          });
+          this.lintResults.stats.info++;
+          break; // Only report once per file
+        }
       }
     }
-
-    // Check for long functions
-    // This is a simplified check - in production you'd parse the AST using functionPattern
-    // const functionPattern = /(?:function\s+\w+|const\s+\w+\s*=\s*(?:async\s*)?\()/g;
   }
 
   /**
-   * Check React-specific best practices
+   * Check for hardcoded secrets
    */
-  async checkBestPractices() {
-    console.log('📚 Checking React best practices...');
+  async checkSecrets() {
+    console.log('🔒 Checking for secrets...');
 
     const srcPath = path.join(this.config.projectRoot, this.config.srcDir);
-    const componentFiles = await this.getAllFiles(srcPath, ['.jsx']);
+    const files = await this.getAllFiles(srcPath, ['.js', '.jsx', '.json', '.env']);
 
-    for (const file of componentFiles) {
+    const secretPatterns = [
+      { name: 'API Key', regex: /(?:api|secret|access|jwt)[_.-]?(?:key|token)?\s*[:=]\s*['"`]([a-zA-Z0-9_\-]{20,})['"`]/i },
+      { name: 'Bearer Token', regex: /Bearer\s+([a-zA-Z0-9\-\._]{20,})/i },
+      { name: 'Private Key', regex: /BEGIN\s+PRIVATE\s+KEY/ },
+      { name: 'Password', regex: /password\s*[:=]\s*['"`]([^'"`]{6,})['"`]/i },
+      { name: 'AWS Key', regex: /AKIA[0-9A-Z]{16}/ }
+    ];
+
+    for (const file of files) {
+      if (file.includes('test') || file.includes('mock')) continue; // Skip tests
+
       try {
         const content = await fs.readFile(file, 'utf-8');
         const relativePath = file.replace(this.config.projectRoot, '');
+        const lines = content.split('\n');
 
-        // Check for missing key prop in lists
-        if (content.includes('.map(') && !content.includes('key=')) {
-          this.lintResults.suggestions.push({
-            type: 'suggestion',
-            message: 'Using .map() without key prop - ensure all list items have unique keys',
-            file: relativePath,
-            severity: 'warning'
-          });
-        }
-
-        // Check for inline styles (potential performance issue)
-        const inlineStylePattern = /style=\{\{/g;
-        const inlineStyleCount = (content.match(inlineStylePattern) || []).length;
-        if (inlineStyleCount > 5) {
-          this.lintResults.suggestions.push({
-            type: 'suggestion',
-            message: `Found ${inlineStyleCount} inline styles. Consider using CSS modules or styled-components for better performance.`,
-            file: relativePath,
-            severity: 'info'
-          });
-        }
-
-        // Check for proper hook usage
-        if (content.includes('useState') || content.includes('useEffect')) {
-          const lines = content.split('\n');
-          let inCondition = false;
-          for (let i = 0; i < lines.length; i++) {
-            if (lines[i].includes('if (') || lines[i].includes('if(')) {
-              inCondition = true;
-            }
-            if (inCondition && (lines[i].includes('useState') || lines[i].includes('useEffect'))) {
+        lines.forEach((line, index) => {
+          secretPatterns.forEach(pattern => {
+            if (pattern.regex.test(line)) {
               this.lintResults.issues.push({
                 type: 'error',
-                message: 'Hooks should not be called conditionally',
+                message: `Potential ${pattern.name} found (hardcoded secret)`,
                 file: relativePath,
-                line: i + 1,
+                line: index + 1,
                 severity: 'error'
               });
               this.lintResults.stats.errors++;
             }
-            if (lines[i].includes('}')) {
-              inCondition = false;
-            }
-          }
-        }
+          });
+        });
       } catch (error) {
-        console.warn(`Could not analyze ${file}:`, error.message);
+        console.warn(`Could not check secrets in ${file}:`, error.message);
       }
     }
   }

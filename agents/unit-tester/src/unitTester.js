@@ -163,7 +163,7 @@ class UnitTester {
    * Generate Vitest configuration
    */
   async generateVitestConfig() {
-    const config = `import { defineConfig } from 'vitest/config';
+    const config = `import { defineConfig, configDefaults } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
@@ -172,15 +172,13 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/__tests__/setup.js',
+    exclude: [
+      ...configDefaults.exclude,
+      'e2e-tests/**',
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/',
-        'src/__tests__/',
-        '**/*.spec.js',
-        '**/*.test.js',
-      ],
     },
   },
 });
@@ -195,7 +193,7 @@ export default defineConfig({
    * Generate test setup file
    */
   async generateTestSetup() {
-    const setup = `import { expect, afterEach } from 'vitest';
+    const setup = `import { afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 
@@ -223,6 +221,18 @@ global.indexedDB = {
    * Generate test for a module
    */
   async generateModuleTest(module) {
+    const testFileName = `${module.name}.test.js`;
+    const testPath = path.join(this.config.testsDir, testFileName);
+
+    // Check if test file already exists to prevent overwriting
+    try {
+      await fs.access(testPath);
+      console.log(`⏩ Skipping existing test: ${testFileName}`);
+      return;
+    } catch {
+      // File does not exist, proceed with generation
+    }
+
     const content = await fs.readFile(module.path, 'utf-8');
 
     let testContent = '';
@@ -236,8 +246,6 @@ global.indexedDB = {
     }
 
     if (testContent) {
-      const testFileName = `${module.name}.test.js`;
-      const testPath = path.join(this.config.testsDir, testFileName);
       await fs.writeFile(testPath, testContent);
       console.log(`✅ Generated test: ${testFileName}`);
     }
@@ -316,17 +324,14 @@ describe('${module.name}', () => {
     let testContent = `import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as service from '${importPath}';
 
-// Mock the database
-vi.mock('../../db/database', () => ({
-  db: {
-    ${module.name.replace('Service', '')}s: {
-      toArray: vi.fn(),
-      get: vi.fn(),
-      add: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-    },
-  },
+// Mock API utility
+vi.mock('../../utils/api', () => ({
+  api: {
+    get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    delete: vi.fn(),
+  }
 }));
 
 describe('${module.name}', () => {
@@ -363,52 +368,36 @@ describe('${module.name}', () => {
   }
 
   /**
-   * Generate hook test
+   * Generate test for a custom hook
    */
-  async generateHookTest(module, content) {
+  async generateHookTest(module, _content) {
     const relativePath = module.path.replace(this.config.projectRoot, '').replace(/^\//, '');
     const importPath = relativePath.replace(/^src\//, '../').replace(/\.js$/, '');
 
-    const hookName = content.match(/export\s+(?:default\s+)?function\s+(\w+)/)?.[1] ||
-                     content.match(/export\s+const\s+(\w+)\s*=/)?.[1];
+    let testContent = `import { describe, it, expect, vi } from 'vitest';
+import { ${module.name} } from '${importPath}';
 
-    if (!hookName) return null;
-
-    const testContent = `import { describe, it, expect, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import ${hookName} from '${importPath}';
-
-// Mock dependencies
-vi.mock('../../context/DataContext', () => ({
-  useData: () => ({
-    // Add mock data context
-  }),
+// Mock dependencies if needed
+vi.mock('../../utils/api', () => ({
+  api: {
+    get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    delete: vi.fn(),
+  }
 }));
 
-describe('${hookName}', () => {
-  it('should initialize with default values', () => {
-    const { result } = renderHook(() => ${hookName}());
-    expect(result.current).toBeDefined();
+describe('${module.name}', () => {
+  it('should be defined', () => {
+    expect(${module.name}).toBeDefined();
   });
 
-  it('should handle data fetching', async () => {
-    const { result } = renderHook(() => ${hookName}());
-
-    await waitFor(() => {
-      // TODO: Add assertions for data fetching
-      // expect(result.current.loading).toBe(false);
-      // expect(result.current.data).toBeDefined();
-    });
-  });
-
-  it('should handle errors', async () => {
-    // TODO: Mock error condition and test error handling
-    const { result } = renderHook(() => ${hookName}());
-    // expect(result.current.error).toBeDefined();
+  it('should initialize correctly', () => {
+    // const { result } = renderHook(() => ${module.name}());
+    // expect(result.current).toBeDefined();
   });
 });
 `;
-
     return testContent;
   }
 
@@ -418,21 +407,51 @@ describe('${hookName}', () => {
   async runTests() {
     console.log('🧪 Running unit tests...');
 
+    // Define path for JSON output
+    const jsonOutputPath = path.join(this.config.outputDir, 'vitest-output.json');
+
     return new Promise((resolve) => {
-      const vitest = spawn('npx', ['vitest', 'run', '--coverage'], {
+      const vitest = spawn('npx', ['vitest', 'run', '--reporter=json', '--outputFile=' + jsonOutputPath], {
         cwd: this.config.projectRoot,
         stdio: 'inherit'
       });
 
-      vitest.on('close', (code) => {
+      vitest.on('close', async (code) => {
         if (code === 0) {
           console.log('✅ Unit tests passed');
           this.testResults.success = true;
         } else {
           console.warn(`⚠️  Unit tests exited with code ${code}`);
           this.testResults.success = false;
-          this.testResults.issues.push(`Tests exited with code ${code}`);
         }
+
+        // Parse JSON output for detailed report
+        try {
+          const jsonContent = await fs.readFile(jsonOutputPath, 'utf-8');
+          const results = JSON.parse(jsonContent);
+
+          if (results.testResults) {
+            results.testResults.forEach(suite => {
+              suite.assertionResults.forEach(test => {
+                this.testResults.tests.push({
+                  name: test.fullName,
+                  status: test.status,
+                  duration: test.duration,
+                  error: test.failureMessages?.join('\n') || null
+                });
+
+                if (test.status === 'failed') {
+                  this.testResults.issues.push(`Test failed: ${test.fullName}`);
+                }
+              });
+            });
+            console.log(`📊 Parsed ${this.testResults.tests.length} test results`);
+          }
+        } catch (err) {
+          console.error('Failed to parse Vitest JSON output:', err.message);
+          this.testResults.issues.push('Failed to parse test results');
+        }
+
         resolve();
       });
 

@@ -34,20 +34,20 @@ export async function seedDatabase() {
 
         // Seed all tables
         await db.transaction('rw', db.properties, db.tenants, db.documents, db.issues, db.costs, async () => {
-            // Add properties
-            await db.properties.bulkAdd(INITIAL_PROPERTIES);
+            // Add properties (using bulkPut to allow updates if keys exist)
+            await db.properties.bulkPut(INITIAL_PROPERTIES);
 
             // Add tenants
-            await db.tenants.bulkAdd(INITIAL_TENANTS);
+            await db.tenants.bulkPut(INITIAL_TENANTS);
 
             // Add documents
-            await db.documents.bulkAdd(INITIAL_DOCUMENTS);
+            await db.documents.bulkPut(INITIAL_DOCUMENTS);
 
             // Add issues
-            await db.issues.bulkAdd(INITIAL_ISSUES);
+            await db.issues.bulkPut(INITIAL_ISSUES);
 
             // Add costs
-            await db.costs.bulkAdd(INITIAL_COSTS);
+            await db.costs.bulkPut(INITIAL_COSTS);
         });
 
         return { success: true, alreadySeeded: false };

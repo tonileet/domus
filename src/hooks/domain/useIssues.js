@@ -1,10 +1,29 @@
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useState, useEffect, useCallback } from 'react';
 import { issueService } from '../../db/services';
 import { ISSUE_STATUS } from '../../constants/status';
 import { generateId } from '../../utils/idGenerator';
 
 export const useIssues = () => {
-    const issues = useLiveQuery(() => issueService.getAll(), []) || [];
+    const [issues, setIssues] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const fetchIssues = useCallback(async () => {
+        try {
+            const data = await issueService.getAll();
+            setIssues(data);
+            setError(null);
+        } catch (err) {
+            console.error('Failed to fetch issues:', err);
+            setError(err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchIssues();
+    }, [fetchIssues]);
 
     const addIssue = async (issueData) => {
         try {
@@ -15,7 +34,9 @@ export const useIssues = () => {
                 attachments: [],
                 ...issueData
             };
-            await issueService.create(newIssue);
+            const created = await issueService.create(newIssue);
+            setIssues(prev => [...prev, created]);
+            return created;
         } catch (err) {
             console.error('Failed to add issue:', err);
             throw err;
@@ -24,7 +45,9 @@ export const useIssues = () => {
 
     const updateIssue = async (id, updatedFields) => {
         try {
-            await issueService.update(id, updatedFields);
+            const updated = await issueService.update(id, updatedFields);
+            setIssues(prev => prev.map(i => i.id === id ? updated : i));
+            return updated;
         } catch (err) {
             console.error('Failed to update issue:', err);
             throw err;
@@ -33,7 +56,9 @@ export const useIssues = () => {
 
     const resolveIssue = async (issueId) => {
         try {
-            await issueService.update(issueId, { status: ISSUE_STATUS.CLOSED });
+            const updated = await issueService.update(issueId, { status: ISSUE_STATUS.CLOSED });
+            setIssues(prev => prev.map(i => i.id === issueId ? updated : i));
+            return updated;
         } catch (err) {
             console.error('Failed to resolve issue:', err);
             throw err;
@@ -42,8 +67,12 @@ export const useIssues = () => {
 
     return {
         issues,
+        loading,
+        error,
         addIssue,
         updateIssue,
-        resolveIssue
+        resolveIssue,
+        refreshIssues: fetchIssues
     };
 };
+
